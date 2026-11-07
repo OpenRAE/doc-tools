@@ -1,0 +1,10 @@
+.env
+.tools/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+coverage.xml
+dist/
+vale/Google/
+vale/config/

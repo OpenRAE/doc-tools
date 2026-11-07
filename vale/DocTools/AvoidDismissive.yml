@@ -1,0 +1,7 @@
+# Source: OpenRAE/rae@f30ed4b249f9a2b6cdae151e98d324d085762b2d styles/RAES/AvoidDismissive.yml (MIT).
+extends: existence
+message: "Remove dismissive wording ('%s') and state the action directly."
+level: error
+ignorecase: true
+tokens:
+  - '\b(?:simply|just|obviously|trivial(?:ly)?|easily|easy|straightforward)\b'
