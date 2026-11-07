@@ -34,7 +34,10 @@ if [[ ! -x "$DEST/ste" ]]; then
   fi
   tar -xzf "$WORK/archive.tar.gz" -C "$WORK" ste
   mkdir -p "$DEST"
-  install -m 755 "$WORK/ste" "$DEST/ste.partial"
-  mv -f "$DEST/ste.partial" "$DEST/ste"
+  # A private file and one rename keep parallel installs from sharing a partial binary.
+  PARTIAL="$(mktemp "$DEST/.ste.XXXXXX")"
+  trap 'rm -rf "$WORK" "$PARTIAL"' EXIT
+  install -m 755 "$WORK/ste" "$PARTIAL"
+  mv -f "$PARTIAL" "$DEST/ste"
 fi
 "$DEST/ste" version

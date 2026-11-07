@@ -94,6 +94,27 @@ def test_missing_input_fails() -> None:
     assert result.returncode != 0
 
 
+def test_parallel_installs_share_no_partial_binary(tmp_path: Path) -> None:
+    """Pre-commit runs hook batches in parallel; each install must succeed."""
+    tools = tmp_path / "tools"
+    tools.mkdir()
+    shutil.copy(ROOT / "tools/install-ste.sh", tools)
+    processes = [
+        subprocess.Popen(
+            ["bash", str(tools / "install-ste.sh")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(4)
+    ]
+    for process in processes:
+        _, stderr = process.communicate(timeout=300)
+        assert process.returncode == 0, stderr
+    installed = tmp_path / ".tools/ste/0.10.1"
+    assert sorted(path.name for path in installed.iterdir()) == ["ste"]
+
+
 @pytest.mark.skipif(shutil.which("sha256sum") is None, reason="Linux installer contract")
 def test_installer_rejects_bad_download_before_execution(tmp_path: Path) -> None:
     tools = tmp_path / "tools"

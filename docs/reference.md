@@ -36,7 +36,7 @@ Other ste-cli errors return the ste-cli exit status.
 
 The installer downloads the ste-cli release archive for the host platform.
 It compares the archive SHA-256 with a pinned value before extraction.
-It extracts only the `ste` binary and installs it with one rename.
+It extracts only the `ste` binary. It writes the binary to a private temporary file and renames it.
 It uses an installed binary without a new download.
 
 | Platform | Archive SHA-256 |
@@ -83,7 +83,7 @@ All rules use the `error` level.
 
 Changes from the sources:
 
-- The installer extracts only `ste` and installs it with one rename.
+- The installer extracts only `ste`. It writes a private temporary file and renames it, so parallel installs succeed.
 - `PlainWords` does not change `terminate` to `stop`. Cloud APIs use both words with different meanings.
 - The skill has no LilRAE file list.
 
