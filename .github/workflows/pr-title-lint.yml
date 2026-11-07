@@ -1,0 +1,58 @@
+name: PR title lint
+
+on:
+  pull_request:
+    # Both protected branches require `Lint PR title`. A required check must
+    # report on every branch that requires it. Squash-merged feature titles
+    # become the commits that release-please reads on main.
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint-title:
+    name: Lint PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate conventional-commit title
+        # amannn/action-semantic-pull-request v5.5.3
+        uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # release-please bumps on feat, fix, perf, and breaking changes.
+          types: |
+            security
+            added
+            changed
+            deprecated
+            removed
+            fixed
+            feat
+            fix
+            chore
+            docs
+            refactor
+            test
+            ci
+            build
+            perf
+            revert
+          # Scopes are optional; if present, must be lowercase kebab-case.
+          requireScope: false
+          # Subject must start with a lowercase letter.
+          subjectPattern: ^[a-z].*$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            must start with a lowercase letter. Examples:
+              feat(ste): add a configuration option
+              fix(installer): reject a partial download

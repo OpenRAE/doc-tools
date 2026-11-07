@@ -1,0 +1,7 @@
+# Source: OpenRAE/rae@f30ed4b249f9a2b6cdae151e98d324d085762b2d styles/RAES/AvoidHype.yml (MIT).
+extends: existence
+message: "Replace promotional wording ('%s') with a measurable current-state claim."
+level: error
+ignorecase: true
+tokens:
+  - '\b(?:powerful|seamless|world-class|production-ready|comprehensive|state[- ]of[- ]the[- ]art)\b'

@@ -1,0 +1,14 @@
+{
+  "name": "openrae-doc-tools",
+  "description": "Documentation guidance for OpenRAE repositories",
+  "owner": {
+    "name": "OpenRAE"
+  },
+  "plugins": [
+    {
+      "name": "doc-tools",
+      "source": "./",
+      "description": "Diataxis and ASD-STE100 documentation skill"
+    }
+  ]
+}

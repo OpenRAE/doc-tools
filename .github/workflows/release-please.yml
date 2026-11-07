@@ -1,0 +1,62 @@
+name: Release Please
+
+# release-please opens the release PR on main. When that PR merges, it creates
+# the vX.Y.Z tag and release, and this workflow attaches the package archive,
+# the Vale style package, and their SHA-256 sums.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  assets:
+    name: Release assets
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - name: Build and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+          VERSION: ${{ needs.release-please.outputs.version }}
+        run: |
+          set -euo pipefail
+          out="${RUNNER_TEMP}/assets"
+          mkdir -p "$out"
+          git archive --format=tar.gz --prefix="doc-tools-${VERSION}/" \
+            -o "${out}/doc-tools-${VERSION}.tar.gz" "$TAG"
+          (cd vale && zip -qrX "${out}/DocTools.zip" DocTools)
+          (cd "$out" && sha256sum "doc-tools-${VERSION}.tar.gz" DocTools.zip > SHA256SUMS)
+          cat "${out}/SHA256SUMS"
+          gh release upload "$TAG" "${out}"/* --repo "$GITHUB_REPOSITORY"
