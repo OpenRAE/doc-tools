@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - name: Run every hook on every file
-        run: uvx pre-commit@4.3.0 run --all-files --show-diff-on-failure
+        run: uvx --no-build pre-commit@4.3.0 run --all-files --show-diff-on-failure
 
   tests:
     name: Tests (${{ matrix.os }})
@@ -49,13 +49,13 @@ jobs:
         run: |
           set -euo pipefail
           archive="${RUNNER_TEMP}/vale.tar.gz"
-          curl -sSfL -o "$archive" \
+          curl --proto '=https' -sSfL -o "$archive" \
             "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
           echo "${VALE_SHA256}  ${archive}" | sha256sum -c -
           sudo tar -xzf "$archive" -C /usr/local/bin vale
           vale --version
       - name: Run tests
-        run: uv run --frozen pytest -rs
+        run: uv run --frozen --no-build pytest -rs
 
   docs:
     name: Docs (STE and Vale)
@@ -68,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           archive="${RUNNER_TEMP}/vale.tar.gz"
-          curl -sSfL -o "$archive" \
+          curl --proto '=https' -sSfL -o "$archive" \
             "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
           echo "${VALE_SHA256}  ${archive}" | sha256sum -c -
           sudo tar -xzf "$archive" -C /usr/local/bin vale

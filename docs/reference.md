@@ -84,6 +84,7 @@ All rules use the `error` level.
 Changes from the sources:
 
 - The installer extracts only `ste`. It writes a private temporary file and renames it, so parallel installs succeed.
+- The installer `curl` command uses `--proto '=https'`, so a redirect to a plain HTTP URL fails.
 - `PlainWords` does not change `terminate` to `stop`. Cloud APIs use both words with different meanings.
 - The skill has no LilRAE file list.
 

@@ -19,7 +19,7 @@ if [[ ! -x "$DEST/ste" ]]; then
   WORK="$(mktemp -d)"
   trap 'rm -rf "$WORK"' EXIT
   ASSET="ste-$VERSION-$PLATFORM.tar.gz"
-  curl --fail --silent --show-error --location \
+  curl --proto '=https' --fail --silent --show-error --location \
     "https://github.com/TudorAndrei/ste-cli/releases/download/v$VERSION/$ASSET" \
     -o "$WORK/archive.tar.gz"
   if command -v sha256sum >/dev/null 2>&1; then

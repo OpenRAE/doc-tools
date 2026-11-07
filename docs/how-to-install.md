@@ -20,7 +20,7 @@ Do not copy the package files into the consumer repository.
    VERSION=0.1.0
    SHA256=<recorded archive SHA-256>
    ARCHIVE="doc-tools-${VERSION}.tar.gz"
-   curl --fail --silent --show-error --location -o "$ARCHIVE" \
+   curl --proto '=https' --fail --silent --show-error --location -o "$ARCHIVE" \
      "https://github.com/OpenRAE/doc-tools/releases/download/v${VERSION}/${ARCHIVE}"
    echo "${SHA256}  ${ARCHIVE}" | sha256sum -c -
    ```
