@@ -8,8 +8,8 @@ workflow:
   lint_command: pre-commit run
   base_branch: dev
 sonarcloud:
-  project_key: Brad-Edwards_doc-tools
-  organization: brad-edwards
+  project_key: OpenRAE_doc-tools
+  organization: raesystem
 rules:
   plan_rules: .gc/plan-rules.md
 docs:
