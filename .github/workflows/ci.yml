@@ -1,0 +1,99 @@
+name: CI
+
+# Required checks for dev and main. Each job name is a branch protection context.
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VALE_VERSION: "3.9.1"
+  # SHA-256 of vale_3.9.1_Linux_64-bit.tar.gz from the release checksums file.
+  VALE_SHA256: fbc2eb47d0b8c50220ed1a2c5c611fbe0904ed567d638143d482016a18fd2db0
+
+jobs:
+  pre-commit:
+    name: Pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Run every hook on every file
+        run: uvx --no-build pre-commit@4.3.0 run --all-files --show-diff-on-failure
+
+  tests:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Install Vale
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/vale.tar.gz"
+          curl --proto '=https' -sSfL -o "$archive" \
+            "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          echo "${VALE_SHA256}  ${archive}" | sha256sum -c -
+          sudo tar -xzf "$archive" -C /usr/local/bin vale
+          vale --version
+      - name: Run tests
+        run: uv run --frozen --no-build pytest -rs
+
+  docs:
+    name: Docs (STE and Vale)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Vale
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/vale.tar.gz"
+          curl --proto '=https' -sSfL -o "$archive" \
+            "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          echo "${VALE_SHA256}  ${archive}" | sha256sum -c -
+          sudo tar -xzf "$archive" -C /usr/local/bin vale
+          vale --version
+      - name: Check every maintained Markdown file
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.md' ':!:CHANGELOG.md')
+          bash tools/ste-lint.sh "${files[@]}"
+          vale sync
+          vale "${files[@]}"
+
+  sonarcloud:
+    name: SonarCloud quality gate
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: SonarCloud scan
+        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true

@@ -1,0 +1,26 @@
+[project]
+name = "doc-tools"
+version = "0.0.0"
+description = "Shared documentation checks and agent guidance for OpenRAE repositories"
+license = "MIT"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["pytest", "pytest-cov"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "PT"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S603", "S607"]
