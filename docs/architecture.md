@@ -59,6 +59,7 @@ The analyzer reads documents only and does not change them.
 | Consumer host | A changed ste-cli archive runs code | Pinned SHA-256 check before extraction | `test_installer_rejects_bad_download_before_execution` |
 | Consumer host | A changed doc-tools archive | Consumer-recorded SHA-256 check before extraction | Install guide step 4 |
 | Package directory | A partial binary after a failed or parallel install | A private temporary file for each install, then one rename | `test_parallel_installs_share_no_partial_binary` |
+| Consumer agent client | The plugin loads repository configuration, such as `.mcp.json` | The plugin root is `skills/documentation/`, which holds only the skill | `test_claude_plugin_root_holds_only_the_skill` |
 | Consumer documents | An accidental scan of a large tree | The wrapper refuses a call with no path | `test_no_paths_cannot_start_a_corpus_walk` |
 | Consumer documents | Text sent to a remote service | `dictionary: false`, `analyzer: false`, no network in the wrapper | `.ste.yml` and test review |
 | Check result | A local `.ste.yml` changes the rules | The wrapper always passes `--config` | `test_package_config_applies_from_a_consumer_directory` |

@@ -9,7 +9,7 @@
 | `.ste.yml` | ste-cli configuration. |
 | `vale/DocTools/` | Vale style rules. The release asset `DocTools.zip` contains this directory. |
 | `skills/documentation/` | Agent skill and its license notice. |
-| `.claude-plugin/` | Claude Code marketplace `openrae-doc-tools` and plugin `doc-tools`. |
+| `.claude-plugin/` | Claude Code marketplace `openrae-doc-tools`. Its plugin `doc-tools` has `skills/documentation/` as its root. |
 | `tests/` | Behavior tests for the checks, the style, and the package layout. |
 
 ## `tools/ste-lint.sh`
