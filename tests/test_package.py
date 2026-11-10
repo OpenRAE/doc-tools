@@ -37,16 +37,18 @@ def test_skill_has_client_frontmatter_and_license() -> None:
     assert "Tudor Andrei Dumitrascu" in notice
 
 
-def test_claude_marketplace_lists_the_root_plugin() -> None:
+def test_claude_plugin_root_holds_only_the_skill() -> None:
+    # Claude Code loads .mcp.json, hooks, and bin/ from a plugin root, so the
+    # plugin root must not be the repository root (issue #10).
     marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
-    plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
     assert marketplace["owner"]["name"]
     [entry] = marketplace["plugins"]
-    assert entry["name"] == plugin["name"]
-    assert entry["source"] == "./"
+    assert entry["name"] == "doc-tools"
+    assert entry["source"] == "./skills/documentation"
     assert "version" not in entry
-    assert "version" not in plugin
-    assert (ROOT / "skills" / "documentation" / "SKILL.md").is_file()
+    assert (ROOT / entry["source"]).resolve() == SKILL.resolve()
+    assert sorted(path.name for path in SKILL.iterdir()) == ["LICENSE", "SKILL.md"]
+    assert not (ROOT / ".claude-plugin/plugin.json").exists()
 
 
 def test_vale_style_rules_are_portable() -> None:
