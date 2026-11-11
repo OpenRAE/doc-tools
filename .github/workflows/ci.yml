@@ -6,6 +6,10 @@ on:
     branches: [dev, main]
   push:
     branches: [dev, main]
+  # The `dev` merge queue runs each required check again on the merge group
+  # commit (#13).
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -85,11 +89,47 @@ jobs:
     name: SonarCloud quality gate
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      # SonarCloud has no merge queue support. A merge group runs the pull
+      # request analysis and the quality gate of the queued pull request
+      # against `dev`, on the merge group commit (#13). The step fails when the
+      # merge group does not identify a pull request that targets `dev`.
+      - name: Resolve the analysis target
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          set -euo pipefail
+          if [ "${EVENT_NAME}" != "merge_group" ]; then
+            echo "args=" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          pattern='^refs/heads/gh-readonly-queue/dev/pr-([0-9]+)-[0-9a-f]{40}$'
+          if [[ ! "${QUEUE_REF}" =~ ${pattern} ]]; then
+            echo "Unexpected merge group ref '${QUEUE_REF}'" >&2
+            exit 1
+          fi
+          number="${BASH_REMATCH[1]}"
+          head_ref="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${number}" --jq 'select(.base.ref == "dev") | .head.ref')"
+          if [ -z "${head_ref}" ]; then
+            echo "Pull request ${number} does not target dev" >&2
+            exit 1
+          fi
+          if [[ ! "${head_ref}" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "The head branch of pull request ${number} is not a plain ref name" >&2
+            exit 1
+          fi
+          printf 'args=-Dsonar.pullrequest.key=%s -Dsonar.pullrequest.branch=%s -Dsonar.pullrequest.base=dev\n' \
+            "${number}" "${head_ref}" >> "${GITHUB_OUTPUT}"
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         env:
@@ -97,3 +137,4 @@ jobs:
         with:
           args: >
             -Dsonar.qualitygate.wait=true
+            ${{ steps.target.outputs.args }}
