@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/OpenRAE/doc-tools/compare/v0.1.0...v0.1.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* limit the Claude Code plugin to the documentation skill ([#23](https://github.com/OpenRAE/doc-tools/issues/23)) ([573f964](https://github.com/OpenRAE/doc-tools/commit/573f96464877470f75d2214ea7b8a2f2a1e04906)), closes [#22](https://github.com/OpenRAE/doc-tools/issues/22)
+
 ## 0.1.0 (2026-11-08)
 
 
