@@ -23,7 +23,8 @@ bash tools/ste-lint.sh docs/how-to-install.md
 Install the skill in Claude Code:
 
 ```text
-/plugin install doc-tools --marketplace OpenRAE/doc-tools
+/plugin marketplace add OpenRAE/doc-tools#v0.1.1
+/plugin install doc-tools@openrae-doc-tools
 ```
 
 ## Documentation
