@@ -7,8 +7,12 @@
   "plugins": [
     {
       "name": "doc-tools",
-      "source": "./",
-      "description": "Diataxis and ASD-STE100 documentation skill"
+      "source": "./skills",
+      "strict": false,
+      "skills": ["./documentation"],
+      "description": "Diataxis and ASD-STE100 documentation skill",
+      "license": "MIT",
+      "repository": "https://github.com/OpenRAE/doc-tools"
     }
   ]
 }
