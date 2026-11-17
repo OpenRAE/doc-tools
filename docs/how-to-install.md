@@ -17,7 +17,7 @@ Do not copy the package files into the consumer repository.
 4. Download and verify the archive with the recorded values:
 
    ```shell
-   VERSION=0.1.0
+   VERSION=0.1.1
    SHA256=<recorded archive SHA-256>
    ARCHIVE="doc-tools-${VERSION}.tar.gz"
    curl --proto '=https' --fail --silent --show-error --location -o "$ARCHIVE" \
@@ -49,7 +49,7 @@ A checksum mismatch stops the installation and the check.
 1. Add the release `DocTools.zip` URL to `Packages` in `.vale.ini`:
 
    ```ini
-   Packages = https://github.com/OpenRAE/doc-tools/releases/download/v0.1.0/DocTools.zip
+   Packages = https://github.com/OpenRAE/doc-tools/releases/download/v0.1.1/DocTools.zip
    ```
 
 2. Add `DocTools` to `BasedOnStyles`.
@@ -69,16 +69,24 @@ Two skills with the same name can both show.
 Add the marketplace at a release tag, then install the plugin:
 
 ```text
-/plugin marketplace add OpenRAE/doc-tools#v0.1.0
+/plugin marketplace add OpenRAE/doc-tools#v0.1.1
 /plugin install doc-tools@openrae-doc-tools
 ```
 
-To share the marketplace with a repository team, run this command in the repository.
-Then commit the `.claude/settings.json` file that it writes:
+To share the plugin with a repository team, run these commands in the repository:
 
 ```shell
-claude plugin marketplace add OpenRAE/doc-tools#v0.1.0 --scope project
+claude plugin marketplace add OpenRAE/doc-tools#v0.1.1 --scope project
+claude plugin install doc-tools@openrae-doc-tools --scope project
 ```
+
+The first command adds the marketplace to `.claude/settings.json`.
+The second command enables the plugin in the same file.
+Commit `.claude/settings.json`.
+Each team member runs the same two commands in a clone to download the plugin.
+
+The plugin contains only the `documentation` skill.
+It adds no MCP server, hook, agent, or LSP server.
 
 ### Codex
 
@@ -86,7 +94,7 @@ Run the script of the preinstalled `skill-installer` skill with the repository, 
 
 ```shell
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
-  --repo OpenRAE/doc-tools --path skills/documentation --ref v0.1.0
+  --repo OpenRAE/doc-tools --path skills/documentation --ref v0.1.1
 ```
 
 You can also give the same repository, path, and tag to `$skill-installer` in a Codex session.
