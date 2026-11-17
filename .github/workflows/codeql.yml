@@ -5,6 +5,10 @@ on:
     branches: [dev, main]
   push:
     branches: [dev, main]
+  # The `dev` merge queue requires the CodeQL contexts on the merge group
+  # commit (#13).
+  merge_group:
+    types: [checks_requested]
   schedule:
     - cron: '17 5 * * 1'
 
