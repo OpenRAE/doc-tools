@@ -13,6 +13,10 @@ on:
     branches:
       - dev
       - main
+  # The `dev` merge queue runs `Lint PR title` again on the merge group. The
+  # check validates the current title of the queued pull request (#13).
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
@@ -22,37 +26,118 @@ jobs:
   lint-title:
     name: Lint PR title
     runs-on: ubuntu-latest
+    env:
+      # One set of title rules for the pull request and merge group steps.
+      # release-please bumps on feat, fix, perf, and breaking changes.
+      PR_TITLE_TYPES: |
+        security
+        added
+        changed
+        deprecated
+        removed
+        fixed
+        feat
+        fix
+        chore
+        docs
+        refactor
+        test
+        ci
+        build
+        perf
+        revert
+      # Scopes are optional; if present, must be lowercase kebab-case.
+      PR_TITLE_REQUIRE_SCOPE: "false"
+      # Subject must start with a lowercase letter.
+      PR_TITLE_SUBJECT_PATTERN: ^[a-z].*$
+      PR_TITLE_SUBJECT_PATTERN_ERROR: |
+        The subject "{subject}" found in the pull request title "{title}"
+        must start with a lowercase letter. Examples:
+          feat(ste): add a configuration option
+          fix(installer): reject a partial download
     steps:
       - name: Validate conventional-commit title
+        if: github.event_name == 'pull_request'
         # amannn/action-semantic-pull-request v5.5.3
         uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # release-please bumps on feat, fix, perf, and breaking changes.
-          types: |
-            security
-            added
-            changed
-            deprecated
-            removed
-            fixed
-            feat
-            fix
-            chore
-            docs
-            refactor
-            test
-            ci
-            build
-            perf
-            revert
-          # Scopes are optional; if present, must be lowercase kebab-case.
-          requireScope: false
-          # Subject must start with a lowercase letter.
-          subjectPattern: ^[a-z].*$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            must start with a lowercase letter. Examples:
-              feat(ste): add a configuration option
-              fix(installer): reject a partial download
+          types: ${{ env.PR_TITLE_TYPES }}
+          requireScope: ${{ env.PR_TITLE_REQUIRE_SCOPE }}
+          subjectPattern: ${{ env.PR_TITLE_SUBJECT_PATTERN }}
+          subjectPatternError: ${{ env.PR_TITLE_SUBJECT_PATTERN_ERROR }}
+
+      - name: Validate the title of the queued pull request
+        # The action reads the pull_request event, and a merge group event has
+        # no pull request. This step reads the queued pull request from the API
+        # and applies the action's validatePrTitle rules with the same inputs:
+        # the conventionalcommits header pattern, the types, requireScope, and
+        # the exact subject pattern match. The title never enters the shell.
+        if: github.event_name == 'merge_group'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QUEUE_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          set -euo pipefail
+          pattern='^refs/heads/gh-readonly-queue/dev/pr-([0-9]+)-[0-9a-f]{40}$'
+          if [[ ! "${QUEUE_REF}" =~ ${pattern} ]]; then
+            echo "Unexpected merge group ref '${QUEUE_REF}'" >&2
+            exit 1
+          fi
+          pull_request="${RUNNER_TEMP}/queued-pull-request.json"
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${BASH_REMATCH[1]}" > "${pull_request}"
+          python3 -I - "${pull_request}" <<'PY'
+          import json
+          import os
+          import re
+          import sys
+
+          # JavaScript `.` does not match these line terminators.
+          dot = "[^\n\r\u2028\u2029]"
+          # conventional-changelog-conventionalcommits headerPattern.
+          header_pattern = re.compile(
+              rf"(\w*)(?:\(({dot}*)\))?!?: ({dot}*)", re.ASCII
+          )
+
+
+          def parse_enum(value):
+              return [item.strip() for item in re.split(r"[\n,]", value) if item.strip()]
+
+
+          def fail(message):
+              # json.dumps keeps untrusted text on one line, after a fixed prefix.
+              print(f"Lint PR title failed: {message}", file=sys.stderr)
+              sys.exit(1)
+
+
+          with open(sys.argv[1], encoding="utf-8") as handle:
+              pull_request = json.load(handle)
+          if pull_request.get("base", {}).get("ref") != "dev":
+              fail("the queued pull request does not target dev")
+          title = pull_request.get("title")
+          if not isinstance(title, str):
+              fail("the queued pull request has no title")
+
+          types = parse_enum(os.environ["PR_TITLE_TYPES"])
+          require_scope = os.environ["PR_TITLE_REQUIRE_SCOPE"].strip() == "true"
+          subject_pattern = os.environ["PR_TITLE_SUBJECT_PATTERN"]
+          subject_pattern_error = os.environ["PR_TITLE_SUBJECT_PATTERN_ERROR"]
+
+          lines = re.split(r"\r?\n", title.strip("\r\n"))
+          match = header_pattern.fullmatch(lines[0])
+          kind, scope, subject = match.groups() if match else (None, None, None)
+          if not kind:
+              fail(f"no release type found in the title {json.dumps(title)}")
+          if not subject:
+              fail(f"no subject found in the title {json.dumps(title)}")
+          if not any(re.search(f"^{item}$", kind) for item in types):
+              fail(f"unknown release type {json.dumps(kind)}; allowed types: {', '.join(types)}")
+          if require_scope and not scope:
+              fail(f"no scope found in the title {json.dumps(title)}")
+          subject_match = re.search(subject_pattern, subject)
+          if not subject_match or len(subject_match.group(0)) != len(subject):
+              message = subject_pattern_error.replace("{subject}", subject).replace("{title}", title)
+              fail(json.dumps(message))
+          print(f"Title {json.dumps(title)} is valid")
+          PY
